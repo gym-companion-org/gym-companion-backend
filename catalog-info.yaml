@@ -1,0 +1,10 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: gym-companion-backend
+  annotations:
+    github.com/project-slug: alexxfan/gym-companion-backend
+spec:
+  type: other
+  lifecycle: unknown
+  owner: guests
