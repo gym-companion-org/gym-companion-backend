@@ -6,7 +6,7 @@ import pool from '../config/db'; // Ensure correct path
 const router: Router = express.Router();
 
 //register
-router.post('/register', async (req: Request, res: Response): Promise<void> => {
+router.post('/register', async (req: Request, res: Response): Promise<void> => { //perform operation and send response
     try {
         const { email, password } = req.body;
         if (!email || !password) {
@@ -37,7 +37,7 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
 });
 
 //login
-router.post('/login', async (req: Request, res: Response): Promise<void> => {
+router.post('/login', async (req: Request, res: Response): Promise<void> => { //perform operation and send response
     try {
         const { email, password } = req.body;
 
