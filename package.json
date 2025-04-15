@@ -14,7 +14,9 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "jsonrepair": "^3.12.0",
     "jsonwebtoken": "^9.0.2",
+    "openai": "^4.89.0",
     "pg": "^8.13.3"
   },
   "devDependencies": {

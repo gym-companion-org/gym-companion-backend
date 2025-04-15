@@ -5,10 +5,10 @@ import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 
 const router: Router = express.Router();
 
-// Apply authentication middleware to all workout routes
+//apply authentication middleware to all workout routes
 router.use(authenticateToken);
 
-// 1. Create a new program
+//create a new program
 router.post('/programs', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { program_name } = req.body;
@@ -33,7 +33,7 @@ router.post('/programs', async (req: AuthenticatedRequest, res: Response): Promi
   }
 });
 
-// 2. Get all programs for a user
+//get all programs for a user
 router.get('/programs', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const user_id = req.user?.user_id;
@@ -50,13 +50,13 @@ router.get('/programs', async (req: AuthenticatedRequest, res: Response): Promis
   }
 });
 
-// 3. Get a specific program by ID
+//get a specific program by ID
 router.get('/programs/:programId', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { programId } = req.params;
     const user_id = req.user?.user_id;
     
-    // Check if program exists and belongs to the user
+    //check if program exists and belongs to the user
     const programResult = await pool.query(
       'SELECT * FROM program WHERE program_id = $1 AND user_id = $2',
       [programId, user_id]
@@ -67,13 +67,13 @@ router.get('/programs/:programId', async (req: AuthenticatedRequest, res: Respon
       return;
     }
     
-    // Get all workouts for this program
+    //get all workouts for this program
     const workoutsResult = await pool.query(
       'SELECT * FROM workout WHERE program_id = $1',
       [programId]
     );
     
-    // Return program with its workouts
+    //return program with its workouts
     res.status(200).json({
       program: programResult.rows[0],
       workouts: workoutsResult.rows
@@ -84,7 +84,7 @@ router.get('/programs/:programId', async (req: AuthenticatedRequest, res: Respon
   }
 });
 
-// 4. Add a workout to a program
+//add a workout to a program
 router.post('/programs/:programId/workouts', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { programId } = req.params;
@@ -96,7 +96,7 @@ router.post('/programs/:programId/workouts', async (req: AuthenticatedRequest, r
       return;
     }
     
-    // Verify program belongs to user
+    //check program belongs to user
     const programResult = await pool.query(
       'SELECT * FROM program WHERE program_id = $1 AND user_id = $2',
       [programId, user_id]
@@ -107,7 +107,7 @@ router.post('/programs/:programId/workouts', async (req: AuthenticatedRequest, r
       return;
     }
     
-    // Add workout
+    //add workout
     const result = await pool.query(
       'INSERT INTO workout (program_id, workout_name) VALUES ($1, $2) RETURNING *',
       [programId, workout_name]
@@ -120,13 +120,13 @@ router.post('/programs/:programId/workouts', async (req: AuthenticatedRequest, r
   }
 });
 
-// 5. Get all workouts for a program
+//get all workouts for a program
 router.get('/programs/:programId/workouts', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { programId } = req.params;
     const user_id = req.user?.user_id;
     
-    // Verify program belongs to user
+    //check program belongs to user
     const programResult = await pool.query(
       'SELECT * FROM program WHERE program_id = $1 AND user_id = $2',
       [programId, user_id]
@@ -137,7 +137,7 @@ router.get('/programs/:programId/workouts', async (req: AuthenticatedRequest, re
       return;
     }
     
-    // Get all workouts for this program
+    //get all workouts for this program
     const workoutsResult = await pool.query(
       'SELECT * FROM workout WHERE program_id = $1',
       [programId]
@@ -150,13 +150,13 @@ router.get('/programs/:programId/workouts', async (req: AuthenticatedRequest, re
   }
 });
 
-// 6. Get a specific workout with exercises
+//get a specific workout with exercises
 router.get('/programs/:programId/workouts/:workoutId', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { programId, workoutId } = req.params;
     const user_id = req.user?.user_id;
     
-    // Verify workout belongs to user's program
+    //check workout belongs to users program
     const workoutCheck = await pool.query(
       `SELECT w.* FROM workout w
        JOIN program p ON w.program_id = p.program_id
@@ -169,7 +169,7 @@ router.get('/programs/:programId/workouts/:workoutId', async (req: Authenticated
       return;
     }
     
-    // Get exercises for this workout
+    //get exercises for this workout
     const exercisesResult = await pool.query(
       'SELECT * FROM exercise WHERE workout_id = $1',
       [workoutId]
@@ -185,7 +185,7 @@ router.get('/programs/:programId/workouts/:workoutId', async (req: Authenticated
   }
 });
 
-// 7. Add an exercise to a workout
+//add an exercise to a workout
 router.post('/programs/:programId/workouts/:workoutId/exercises', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { programId, workoutId } = req.params;
@@ -197,7 +197,7 @@ router.post('/programs/:programId/workouts/:workoutId/exercises', async (req: Au
       return;
     }
     
-    // Verify workout belongs to user's program
+    //check workout belongs to user program
     const workoutCheck = await pool.query(
       `SELECT w.* FROM workout w
        JOIN program p ON w.program_id = p.program_id
@@ -210,7 +210,7 @@ router.post('/programs/:programId/workouts/:workoutId/exercises', async (req: Au
       return;
     }
     
-    // Add exercise
+    //add exercise
     const result = await pool.query(
       'INSERT INTO exercise (workout_id, exercise_name, sets, reps, weight) VALUES ($1, $2, $3, $4, $5) RETURNING *',
       [workoutId, exercise_name, sets || 0, reps || 0, weight || 0]
@@ -223,13 +223,13 @@ router.post('/programs/:programId/workouts/:workoutId/exercises', async (req: Au
   }
 });
 
-// 8. Get all exercises for a workout
+//get all exercises for a workout
 router.get('/programs/:programId/workouts/:workoutId/exercises', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { programId, workoutId } = req.params;
     const user_id = req.user?.user_id;
     
-    // Verify workout belongs to user's program
+    //check workout belongs to user's program
     const workoutCheck = await pool.query(
       `SELECT w.* FROM workout w
        JOIN program p ON w.program_id = p.program_id
@@ -242,7 +242,7 @@ router.get('/programs/:programId/workouts/:workoutId/exercises', async (req: Aut
       return;
     }
     
-    // Get exercises for this workout
+    //get exercises for this workout
     const exercisesResult = await pool.query(
       'SELECT * FROM exercise WHERE workout_id = $1',
       [workoutId]
@@ -255,13 +255,13 @@ router.get('/programs/:programId/workouts/:workoutId/exercises', async (req: Aut
   }
 });
 
-// 9. Get a specific exercise
+//get a specific exercise from workout in program
 router.get('/programs/:programId/workouts/:workoutId/exercises/:exerciseId', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { programId, workoutId, exerciseId } = req.params;
     const user_id = req.user?.user_id;
     
-    // Verify exercise belongs to user through workout and program
+    //check exercise belongs to user through workout and program
     const exerciseCheck = await pool.query(
       `SELECT e.* FROM exercise e
        JOIN workout w ON e.workout_id = w.workout_id
@@ -282,7 +282,7 @@ router.get('/programs/:programId/workouts/:workoutId/exercises/:exerciseId', asy
   }
 });
 
-// 10. Update an exercise (for tracking progress)
+// update an exercise (for tracking progress)
 router.put('/programs/:programId/workouts/:workoutId/exercises/:exerciseId', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { programId, workoutId, exerciseId } = req.params;
@@ -345,13 +345,13 @@ router.put('/programs/:programId/workouts/:workoutId/exercises/:exerciseId', asy
   }
 });
 
-// 11. Delete an exercise
+//delete an exercise
 router.delete('/programs/:programId/workouts/:workoutId/exercises/:exerciseId', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { programId, workoutId, exerciseId } = req.params;
     const user_id = req.user?.user_id;
     
-    // Verify exercise belongs to user through workout and program
+    //check exercise belongs to user through workout and program
     const exerciseCheck = await pool.query(
       `SELECT e.* FROM exercise e
        JOIN workout w ON e.workout_id = w.workout_id
@@ -365,7 +365,7 @@ router.delete('/programs/:programId/workouts/:workoutId/exercises/:exerciseId', 
       return;
     }
     
-    // Delete exercise
+    //delete exercise
     await pool.query(
       'DELETE FROM exercise WHERE exercise_id = $1',
       [exerciseId]
@@ -378,7 +378,7 @@ router.delete('/programs/:programId/workouts/:workoutId/exercises/:exerciseId', 
   }
 });
 
-// 12. Delete a workout and all its exercises
+//delete a workout and all its exercises
 router.delete('/programs/:programId/workouts/:workoutId', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { programId, workoutId } = req.params;
@@ -397,13 +397,13 @@ router.delete('/programs/:programId/workouts/:workoutId', async (req: Authentica
       return;
     }
     
-    // Delete all exercises in this workout first
+    //delete all exercises in this workout
     await pool.query(
       'DELETE FROM exercise WHERE workout_id = $1',
       [workoutId]
     );
     
-    // Delete workout
+    //delete workout
     await pool.query(
       'DELETE FROM workout WHERE workout_id = $1',
       [workoutId]
@@ -416,13 +416,13 @@ router.delete('/programs/:programId/workouts/:workoutId', async (req: Authentica
   }
 });
 
-// 13. Delete a program and all its workouts and exercises
+//delete a program and all its workouts and exercises
 router.delete('/programs/:programId', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { programId } = req.params;
     const user_id = req.user?.user_id;
     
-    // Verify program belongs to user
+    //check program belongs to user
     const programResult = await pool.query(
       'SELECT * FROM program WHERE program_id = $1 AND user_id = $2',
       [programId, user_id]
@@ -433,17 +433,17 @@ router.delete('/programs/:programId', async (req: AuthenticatedRequest, res: Res
       return;
     }
     
-    // Start a transaction for cascading deletion
+    //start a transaction for cascading deletion
     await pool.query('BEGIN');
     
     try {
-      // Get all workouts for this program
+      //get all workouts for this program
       const workoutsResult = await pool.query(
         'SELECT workout_id FROM workout WHERE program_id = $1',
         [programId]
       );
       
-      // Delete all exercises in all workouts
+      //delete all exercises in all workouts
       for (const workout of workoutsResult.rows) {
         await pool.query(
           'DELETE FROM exercise WHERE workout_id = $1',
@@ -451,24 +451,24 @@ router.delete('/programs/:programId', async (req: AuthenticatedRequest, res: Res
         );
       }
       
-      // Delete all workouts in this program
+      //delete all workouts in this program
       await pool.query(
         'DELETE FROM workout WHERE program_id = $1',
         [programId]
       );
       
-      // Delete the program
+      //delete the program
       await pool.query(
         'DELETE FROM program WHERE program_id = $1',
         [programId]
       );
       
-      // Commit the transaction
+      //commit the transaction
       await pool.query('COMMIT');
       
       res.status(200).json({ message: 'Program and all its workouts and exercises deleted successfully' });
     } catch (err) {
-      // Rollback the transaction if any errors occur
+      //rollback the transaction if any errors occur
       await pool.query('ROLLBACK');
       throw err;
     }
