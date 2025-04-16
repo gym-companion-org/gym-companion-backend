@@ -86,7 +86,7 @@ export async function generateWorkoutPlan(request: WorkoutPlanRequest): Promise<
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4.1-2025-04-14",
       messages: [
         {
           role: "system",
@@ -98,7 +98,7 @@ export async function generateWorkoutPlan(request: WorkoutPlanRequest): Promise<
         }
       ],
       temperature: 0.7,
-      max_tokens: 10000,
+      max_tokens: 20000,
     });
 
     return response.choices[0].message.content || "";
@@ -180,7 +180,7 @@ export async function generateMealPlan(request: MealPlanRequest): Promise<string
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4.1-2025-04-14",
       messages: [
         {
           role: "system",
@@ -192,7 +192,7 @@ export async function generateMealPlan(request: MealPlanRequest): Promise<string
         }
       ],
       temperature: 0.7,
-      max_tokens: 10000,
+      max_tokens: 20000,
     });
 
     return response.choices[0].message.content || "";
