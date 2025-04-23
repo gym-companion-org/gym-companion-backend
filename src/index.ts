@@ -5,11 +5,20 @@ import mealPlanRoutes from './routes/mealPlanRoutes';
 import progressRoutes from './routes/progressRoutes';
 import sessionRoutes from './routes/sessionRoutes';
 import aiRoutes from './routes/aiRoutes';
+import cors from 'cors'; // Add this import
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 const app = express();
+
+//CORS middleware before other middleware
+app.use(cors({
+  origin: '*', 
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 
 // Routes
