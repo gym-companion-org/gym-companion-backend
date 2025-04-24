@@ -1,78 +1,89 @@
 import express, { Request, Response, Router } from 'express';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import pool from '../config/db'; // Ensure correct path
+import pool from '../config/db';
 
 const router: Router = express.Router();
 
-//register
-router.post('/register', async (req: Request, res: Response): Promise<void> => { //perform operation and send response
-    try {
-        const { email, password } = req.body;
-        if (!email || !password) {
-            res.status(400).json({ error: 'Missing email or password' }); //must enter email and password
-            return;
-        }
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        //check if account with email exists
-        const userExists = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-        if (userExists.rows.length > 0) {
-            res.status(400).json({ error: 'User with this email already exists, please use a different email address' });
-            return;
-        }
-
-        //add user
-        const result = await pool.query(
-            'INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING *',
-            [email, hashedPassword]
-        );
-
-        res.status(201).json({ message: 'User registered successfully', user: result.rows[0] });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Internal server error' });
-    }
+const formatUser = (user: any) => ({
+  user_id: user.user_id,
+  email: user.email,
 });
 
-//login
-router.post('/login', async (req: Request, res: Response): Promise<void> => { //perform operation and send response
-    try {
-        const { email, password } = req.body;
+router.post('/auth0-callback', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { auth0_id, email } = req.body;
 
-        if (!email || !password) {
-            res.status(400).json({ error: 'Missing email or password' });
-            return;
-        }
-
-        //get user from db
-        const user = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-
-        if (user.rows.length === 0) {
-            res.status(401).json({ error: 'Invalid credentials' });
-            return;
-        }
-
-        //check password
-        const isMatch = await bcrypt.compare(password, user.rows[0].password_hash);
-        if (!isMatch) {
-            res.status(401).json({ error: 'Invalid Password,' });
-            return;
-        }
-
-        //generate token
-        const token = jwt.sign(
-            { user_id: user.rows[0].user_id },
-            process.env.JWT_SECRET as string, //make sure token is in .env
-            { expiresIn: '1h' }
-        );
-
-        res.status(200).json({ message: 'Login successful', token });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Internal server error' });
+    if (!auth0_id || !email) {
+      res.status(400).json({ error: 'Missing required fields' });
+      return;
     }
+
+    const existingUser = await pool.query(
+      'SELECT * FROM users WHERE auth0_id = $1',
+      [auth0_id]
+    );
+
+    if (existingUser.rows.length > 0) {
+      res.status(200).json({ user: formatUser(existingUser.rows[0]) });
+      return;
+    }
+
+    const newUser = await pool.query(
+      'INSERT INTO users (email, auth0_id) VALUES ($1, $2) RETURNING *',
+      [email, auth0_id]
+    );
+
+    res.status(201).json({ user: formatUser(newUser.rows[0]) });
+  } catch (err) {
+    console.error('Error handling Auth0 callback:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.post('/register-auth0-user', async (req: Request, res: Response): Promise<void> => {
+  const { auth0_id, email } = req.body;
+
+  if (!auth0_id || !email) {
+    res.status(400).json({ error: 'Missing auth0_id or email' });
+    return;
+  }
+
+  try {
+    const existing = await pool.query(
+      'SELECT * FROM users WHERE auth0_id = $1 OR email = $2',
+      [auth0_id, email]
+    );
+
+    if (existing.rows.length > 0) {
+      const user = existing.rows[0];
+
+      if (!user.auth0_id) {
+        await pool.query(
+          'UPDATE users SET auth0_id = $1 WHERE email = $2',
+          [auth0_id, email]
+        );
+        user.auth0_id = auth0_id;
+      }
+
+      res.status(200).json({
+        message: 'User already exists or updated',
+        user: formatUser(user),
+      });
+      return;
+    }
+
+    const newUser = await pool.query(
+      'INSERT INTO users (auth0_id, email) VALUES ($1, $2) RETURNING *',
+      [auth0_id, email]
+    );
+
+    res.status(201).json({
+      message: 'User created',
+      user: formatUser(newUser.rows[0]),
+    });
+  } catch (error: any) {
+    console.error('🔥 Error in register-auth0-user:', error);
+    res.status(500).json({ error: 'Database error', details: error.message || error });
+  }
 });
 
 export default router;

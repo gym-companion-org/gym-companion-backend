@@ -1,0 +1,57 @@
+name: CI/CD - Build and Deploy backend & database to AKS
+
+on:
+  workflow_dispatch:  # 
+
+env:
+  ACR_NAME: gymcompanionregistryalex
+  BACKEND_IMAGE_NAME: gym-companion-backend
+  POSTGRES_IMAGE_NAME: gym-companion-postgres
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up kubeconfig from GitHub secret
+      run: |
+        mkdir -p $HOME/.kube
+        echo "${{ secrets.KUBECONFIG_DATA }}" > $HOME/.kube/config
+
+    - name: Log in to Azure Container Registry
+      run: |
+        echo ${{ secrets.ACR_PASSWORD }} | docker login $ACR_NAME.azurecr.io -u ${{ secrets.ACR_USERNAME }} --password-stdin
+
+    - name: Build and push backend Docker image
+      run: |
+        docker build -t $ACR_NAME.azurecr.io/$BACKEND_IMAGE_NAME:latest .
+        docker push $ACR_NAME.azurecr.io/$BACKEND_IMAGE_NAME:latest
+
+    - name: Tag and push postgres image
+      run: |
+        docker pull postgres:14-alpine
+        docker tag postgres:14-alpine $ACR_NAME.azurecr.io/$POSTGRES_IMAGE_NAME:14-alpine
+        docker push $ACR_NAME.azurecr.io/$POSTGRES_IMAGE_NAME:14-alpine
+
+    - name: Create backend secret in Kubernetes
+      run: |
+        kubectl delete secret backend-secret --ignore-not-found
+        kubectl create secret generic backend-secret \
+          --from-literal=DB_USER=${{ secrets.DB_USER }} \
+          --from-literal=DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+          --from-literal=DB_HOST=${{ secrets.DB_HOST }} \
+          --from-literal=DB_NAME=${{ secrets.DB_NAME }} \
+          --from-literal=DB_PORT=${{ secrets.DB_PORT }} \
+          --from-literal=JWT_SECRET=${{ secrets.JWT_SECRET }} \
+          --from-literal=OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
+          --from-literal=DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }} \
+          --from-literal=AUTH0_DOMAIN=${{ secrets.AUTH0_DOMAIN }} \
+          --from-literal=AUTH0_AUDIENCE=${{ secrets.AUTH0_AUDIENCE }}
+
+    - name: Restart backend and postgres deployments
+      run: |
+        kubectl set image deployment/backend backend=$ACR_NAME.azurecr.io/$BACKEND_IMAGE_NAME:latest
+        kubectl set image deployment/postgres postgres=$ACR_NAME.azurecr.io/$POSTGRES_IMAGE_NAME:14-alpine
