@@ -29,6 +29,16 @@ app.use('/api/progress', progressRoutes);
 app.use('/api/session', sessionRoutes);
 app.use('/api/ai', aiRoutes);
 
+// TEMPORARY DEBUG ENDPOINT
+app.get('/debug/config', (req, res) => {
+  res.json({
+    auth0Domain: process.env.AUTH0_DOMAIN,
+    auth0Audience: process.env.AUTH0_AUDIENCE,
+    nodeEnv: process.env.NODE_ENV,
+    appPort: process.env.PORT || 5000
+  });
+});
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
