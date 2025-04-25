@@ -41,8 +41,8 @@ jobs:
 
     - name: Create backend secret in Kubernetes
       run: |
-        kubectl delete secret backend-secret --ignore-not-found
-        kubectl create secret generic backend-secret \
+        kubectl delete secret backend-env --ignore-not-found
+        kubectl create secret generic backend-env \
           --from-literal=DB_USER=${{ secrets.DB_USER }} \
           --from-literal=DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
           --from-literal=DB_HOST=${{ secrets.DB_HOST }} \
