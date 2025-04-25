@@ -1,4 +1,3 @@
-// Updated routes/progressRoutes.ts
 import express, { Response, Router } from 'express';
 import pool from '../config/db';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
@@ -70,7 +69,7 @@ router.get('/history', async (req: AuthenticatedRequest, res: Response): Promise
       }
       const parsedReps = parseFloat(row.reps);
       const parsedWeight = parseFloat(row.weight);
-      //add exercise log
+      //add exercise log, apply CAST for sets, reps, and weight
       session.exercises.push({
         log_id: row.log_id,
         exercise_id: row.exercise_id,
@@ -79,8 +78,7 @@ router.get('/history', async (req: AuthenticatedRequest, res: Response): Promise
         reps: row.reps,
         weight: row.weight,
         completed: row.completed,
-        volume: row.sets * (isNaN(parsedReps) ? 0 : parsedReps) * (isNaN(parsedWeight) ? 0 : parsedWeight)
-        
+        volume: (parseFloat(row.sets) * (isNaN(parsedReps) ? 0 : parsedReps) * (isNaN(parsedWeight) ? 0 : parsedWeight)) //fix
       });
       
       return acc;
@@ -109,14 +107,14 @@ router.get('/progression/:exerciseName', async (req: AuthenticatedRequest, res: 
       ORDER BY s.date ASC
     `, [user_id, exerciseName]);
     
-    //transform data for progression tracking
+    //transform data for progression tracking, apply for sets, reps, and weight
     const progressionData = result.rows.map((row: any) => ({
       date: row.date,
       log_id: row.log_id,
       sets: row.sets,
       reps: row.reps,
       weight: row.weight,
-      volume: row.sets * row.reps * row.weight //calculate total volume
+      volume: (parseFloat(row.sets) * parseFloat(row.reps) * parseFloat(row.weight)) //fix multiplication issue
     }));
     
     res.status(200).json(progressionData);
@@ -155,9 +153,9 @@ router.get('/personal-records', async (req: AuthenticatedRequest, res: Response)
         WITH ranked_volumes AS (
           SELECT 
             ex.exercise_name, 
-            (el.sets * el.reps * el.weight) as volume,
+            (CAST(el.sets AS float) * CAST(el.reps AS float) * CAST(el.weight AS float)) as volume, -- Apply CAST to ensure numeric types
             s.date as record_date,
-            ROW_NUMBER() OVER (PARTITION BY ex.exercise_name ORDER BY (el.sets * el.reps * el.weight) DESC) as rank
+            ROW_NUMBER() OVER (PARTITION BY ex.exercise_name ORDER BY (CAST(el.sets AS float) * CAST(el.reps AS float) * CAST(el.weight AS float)) DESC) as rank
           FROM exercise_log el
           JOIN exercise ex ON el.exercise_id = ex.exercise_id
           JOIN workout_session s ON el.session_id = s.session_id
