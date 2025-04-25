@@ -3,7 +3,7 @@ name: CI/CD - Build and Deploy backend & database to AKS
 on:
   push:
     branches:
-      - actions
+      - **
 
 
 env:
