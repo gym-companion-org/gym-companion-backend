@@ -58,3 +58,8 @@ jobs:
       run: |
         kubectl set image deployment/backend backend=$ACR_NAME.azurecr.io/$BACKEND_IMAGE_NAME:latest
         kubectl set image deployment/postgres postgres=$ACR_NAME.azurecr.io/$POSTGRES_IMAGE_NAME:14-alpine
+
+    - name: Force rollout restart to ensure updates apply
+      run: |
+        kubectl rollout restart deployment backend
+        kubectl rollout restart deployment postgres
