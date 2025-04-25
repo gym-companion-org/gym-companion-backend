@@ -127,7 +127,7 @@ export async function generateMealPlan(request: MealPlanRequest): Promise<string
     1. For each day, provide all meals (${request.mealsPerDay} per day)
     2. For each meal, include:
        - Name of the meal
-       - Type (breakfast/lunch/dinner/snack)
+       - Type (breakfast/lunch/dinner/snack) (also number the meal to avoid duplicates)
        - Ingredients with quantities
        - Total meal macronutrient breakdown (protein, carbs, fats)
        - Total meal calorie count
