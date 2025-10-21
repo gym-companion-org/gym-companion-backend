@@ -7,6 +7,7 @@ on:
   # PR builds (useful before queuing)
   pull_request:
   merge_group:
+  workflow_dispatch:
 
 env:
   IMAGE_NAME: gym-companion-backend
