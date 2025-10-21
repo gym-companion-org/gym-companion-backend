@@ -1,0 +1,44 @@
+name: CI - Podman Build Only
+
+on:
+  push:
+    branches:
+      - '**'
+  # PR builds (useful before queuing)
+  pull_request:
+  merge_group:
+
+env:
+  IMAGE_NAME: gym-companion-backend
+  IMAGE_CONTEXT: .
+  TAG: local-build
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Podman
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y podman
+
+      - name: Podman version
+        run: podman --version
+
+      - name: Build image (no push)
+        run: |
+          # add a second tag with short SHA for traceability (still local)
+          SHORT_SHA=${GITHUB_SHA::7}
+          podman build \
+            --label ci.github.ref="${GITHUB_REF}" \
+            --label ci.github.sha="${GITHUB_SHA}" \
+            -t $IMAGE_NAME:$TAG \
+            -t $IMAGE_NAME:$SHORT_SHA \
+            $IMAGE_CONTEXT
+
+      - name: List built images
+        run: podman images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}"
